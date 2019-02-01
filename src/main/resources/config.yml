@@ -27,6 +27,8 @@ generators:
     - STONE:5.0
     - SANDSTONE:5.0
     permission: 'oregen.vip'
+    worlds:
+    - world1
     unlock_islandLevel: 0
 # Here you can define worlds where the generator should not work
 disabled-worlds:

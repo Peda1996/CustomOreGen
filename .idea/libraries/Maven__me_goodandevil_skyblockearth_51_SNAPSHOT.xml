@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: me.goodandevil:skyblockearth:51-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/me/goodandevil/skyblockearth/51-SNAPSHOT/skyblockearth-51-20181216.200518-1.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/me/goodandevil/skyblockearth/51-SNAPSHOT/skyblockearth-51-20181216.200518-1-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/me/goodandevil/skyblockearth/51-SNAPSHOT/skyblockearth-51-20181216.200518-1-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

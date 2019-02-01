@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: de.spaceio:SpaceIOMetrics:0.0.1-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/de/spaceio/SpaceIOMetrics/0.0.1-SNAPSHOT/SpaceIOMetrics-0.0.1-20171006.235153-15.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/de/spaceio/SpaceIOMetrics/0.0.1-SNAPSHOT/SpaceIOMetrics-0.0.1-20171006.235153-15-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/de/spaceio/SpaceIOMetrics/0.0.1-SNAPSHOT/SpaceIOMetrics-0.0.1-20171006.235153-15-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

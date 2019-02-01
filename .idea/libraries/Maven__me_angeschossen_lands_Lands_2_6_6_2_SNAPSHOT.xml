@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: me.angeschossen.lands:Lands:2.6.6.2-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/me/angeschossen/lands/Lands/2.6.6.2-SNAPSHOT/Lands-2.6.6.2-20181222.111035-1.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/me/angeschossen/lands/Lands/2.6.6.2-SNAPSHOT/Lands-2.6.6.2-20181222.111035-1-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/me/angeschossen/lands/Lands/2.6.6.2-SNAPSHOT/Lands-2.6.6.2-20181222.111035-1-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

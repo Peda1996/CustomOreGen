@@ -14,6 +14,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import xyz.spaceio.XMaterial;
 
 
 public class Events implements Listener {
@@ -33,11 +34,14 @@ public class Events implements Listener {
 		if (plugin.getDisabledWorlds().contains(event.getBlock().getLocation().getWorld().getName())) {
 			return;
 		}
+		System.out.println("World event!:"+event.getBlock().getLocation().getWorld().getName());
 
 		int id = this.getID(event.getBlock());
 
 		if ((id >= 8) && (id <= 11) && event.getFace() != BlockFace.DOWN) {
 			Block b = event.getToBlock();
+
+
 			int toid = this.getID(b);
 			Location fromLoc = b.getLocation();
 			// fix for (lava -> water)
@@ -47,11 +51,25 @@ public class Events implements Listener {
 				}
 			}
 
+			System.out.println("World event 1!:");
+
+
 			if ((toid == 0 || toid == 9 || toid == 8 || toid == 10 || toid == 11) && (generatesCobble(id, b))) {
+
+				System.out.println("World event 2!:");
+
+
 				OfflinePlayer p = plugin.getOwner(b.getLocation());
-				if (p == null)
-					return;
-				GeneratorConfig gc = plugin.getGeneratorConfigForPlayer(p, event.getBlock().getWorld().getName());
+
+				GeneratorConfig gc = null;
+
+				if (p != null)
+					gc = plugin.getGeneratorConfigForPlayer(p, event.getBlock().getWorld().getName());
+				else
+					gc = plugin.getWorldguardConfig(b.getLocation());
+
+				System.out.println("World event 3!:");
+
 				if (gc == null)
 					return;
 				if (getObject(gc) == null)
@@ -68,6 +86,8 @@ public class Events implements Listener {
 				// <Block>.setData(...) is deprecated, but there is no
 				// alternative to it. #spigot
 				if(Arrays.stream(event.getBlock().getClass().getMethods()).anyMatch(method -> method.getName() == "getTypeId")) {
+					//b.setType(Material.getMaterial(winning.getName()));
+					//TODO make things 1.13 compabible
 					b.setTypeIdAndData(Material.getMaterial(winning.getName()).getId() , winning.getDamage(), true);
 				}else {
 					Bukkit.getScheduler().runTask(plugin, () -> {
@@ -76,8 +96,12 @@ public class Events implements Listener {
 						b.getWorld().playSound(b.getLocation(), Sound.BLOCK_FIRE_EXTINGUISH, 1f, 10f);
 					});
 				}
+
 				//b.setData(winning.getDamage(), true);
 			}
+
+			System.out.println("World finish event!!:");
+
 		}
 
 	}
@@ -148,7 +172,7 @@ public class Events implements Listener {
 	public int getID(Block b) {
 	    if(Arrays.stream(b.getClass().getMethods()).anyMatch(method -> method.getName() == "getTypeId")) {
 	    	return b.getTypeId();
-	    }else {
+		}else {
 	    	try {
 	    		return Utils.Material113.valueOf(Utils.Material113.class, b.getType().name()).getID();
 	    	} catch(IllegalArgumentException e) {

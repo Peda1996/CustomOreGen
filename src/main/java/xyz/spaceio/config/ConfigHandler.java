@@ -65,6 +65,13 @@ public class ConfigHandler {
 						"&cConfig error: generator %s has both a permission and level setup! Be sure to choose one of them!",
 						key));
 			}
+			for (String raw : plugin.getConfig().getStringList("generators." + key + ".worlds")) {
+				gc.enabledWorlds.add(raw);
+			}
+
+			for (String raw : plugin.getConfig().getStringList("generators." + key + ".regions")) {
+				gc.worldguardRegions.add(raw);
+			}
 
 			for (String raw : plugin.getConfig().getStringList("generators." + key + ".blocks")) {
 				try {

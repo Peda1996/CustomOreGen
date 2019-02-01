@@ -4,16 +4,21 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import com.plotsquared.bukkit.util.BukkitUtil;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldguard.internal.platform.WorldGuardPlatform;
+import com.sk89q.worldguard.protection.ApplicableRegionSet;
+import com.sk89q.worldguard.protection.managers.RegionManager;
+import com.sk89q.worldguard.protection.regions.ProtectedRegion;
+import com.sk89q.worldguard.protection.regions.RegionContainer;
+import com.sk89q.worldguard.protection.regions.RegionQuery;
+import jdk.nashorn.internal.ir.Block;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -21,18 +26,19 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.google.gson.reflect.TypeToken;
 
 import de.Linus122.SpaceIOMetrics.Metrics;
+import sun.security.acl.WorldGroupImpl;
 import xyz.spaceio.config.ConfigHandler;
 import xyz.spaceio.config.JSONConfig;
 import xyz.spaceio.hooks.HookASkyBlock;
 import xyz.spaceio.hooks.HookAcidIsland;
 import xyz.spaceio.hooks.HookBentoBox;
-import xyz.spaceio.hooks.HookPlotSquared;
 import xyz.spaceio.hooks.HookSkyblockEarth;
 import xyz.spaceio.hooks.SkyblockAPIHook;
 import xyz.spaceio.hooks.HookuSkyBlock;
@@ -65,7 +71,7 @@ public class CustomOreGen extends JavaPlugin {
 	/*
 	 * Cache for GeneratorConfig ID's for each player
 	 */
-	private HashMap<UUID, Integer> cachedOregenConfigs = new HashMap<UUID, Integer>();
+	private HashMap<UUIDWorld, Integer> cachedOregenConfigs = new HashMap<>();
 	private JSONConfig cachedOregenJsonConfig;
 
 	/*
@@ -82,6 +88,8 @@ public class CustomOreGen extends JavaPlugin {
 	 * Prefix for the clogger
 	 */
 	private final String PREFIX = "§6[CustomOreGen] ";
+
+	private WorldGuardPlatform worldGuardPlatform;
 
 	@Override
 	public void onEnable() {
@@ -103,14 +111,29 @@ public class CustomOreGen extends JavaPlugin {
 		cachedOregenJsonConfig = new JSONConfig(cachedOregenConfigs, new TypeToken<HashMap<UUID, Integer>>() {
 		}.getType(), this);
 
-		cachedOregenConfigs = (HashMap<UUID, Integer>) cachedOregenJsonConfig.get();
+		cachedOregenConfigs = (HashMap<UUIDWorld, Integer>) cachedOregenJsonConfig.get();
 
 		if (cachedOregenConfigs == null) {
-			cachedOregenConfigs = new HashMap<UUID, Integer>();
+			cachedOregenConfigs = new HashMap<UUIDWorld, Integer>();
 		}
 		disabledWorlds = getConfig().getStringList("disabled-worlds");
 
+		worldGuardPlatform = getWorldGuard();
+
 		new Metrics(this);
+	}
+
+
+	private WorldGuardPlatform getWorldGuard() {
+		Plugin plugin = getServer().getPluginManager().getPlugin("WorldGuard");
+
+
+		// WorldGuard may not be loaded
+		if (plugin == null) {
+			return null;
+		}
+
+		return WorldGuard.getInstance().getPlatform();
 	}
 
 	/**
@@ -133,8 +156,8 @@ public class CustomOreGen extends JavaPlugin {
 			skyblockAPI = new HookSkyblockEarth();
 			sendConsole("&aUsing SkyblockEarth as SkyBlock-Plugin");
 		} else if (Bukkit.getServer().getPluginManager().isPluginEnabled("PlotSquared")) {
-			skyblockAPI = new HookPlotSquared();
-			sendConsole("&aUsing PlotSquared as SkyBlock-Plugin");
+			//skyblockAPI = new HookPlotSquared();
+			//sendConsole("&aUsing PlotSquared as SkyBlock-Plugin");
 		}
 	}
 
@@ -170,39 +193,94 @@ public class CustomOreGen extends JavaPlugin {
 		configHandler.loadConfig();
 	}
 
+	public GeneratorConfig getWorldguardConfig(Location l){
+		if(l== null || worldGuardPlatform == null) return null;
+
+		//com.sk89q.worldedit.bukkit.
+		Set<ProtectedRegion> regions = worldGuardPlatform.getRegionContainer().get(BukkitAdapter.adapt(l.getWorld())).getApplicableRegions(BlockVector3.at(l.getX(),l.getY(),l.getZ())).getRegions();
+		if(regions.size() == 0)
+			return null;
+
+		GeneratorConfig gc = null;
+
+		for(GeneratorConfig g : generatorConfigs){
+			System.out.println("Worldguardconfig works?!!");
+			if(g.enabledWorlds.contains(l.getWorld().getName())){
+				for(String rg : g.worldguardRegions){
+					for(ProtectedRegion r : regions){
+						String regionId = r.getId();
+						if(regionId == rg){
+							gc = g;
+						}
+					}
+				}
+
+			}
+		}
+
+		return gc;
+
+	}
+
+
 	public GeneratorConfig getGeneratorConfigForPlayer(OfflinePlayer p, String world) {
 		GeneratorConfig gc = null;
-		int id = 0;
+		//int id = 0;
+		Map<String, Integer> worldId = new HashMap<>();
+
 		if (p == null) {
-			gc = generatorConfigs.get(0);
-			cacheOreGen(p.getUniqueId(), id);
+			for(GeneratorConfig g : generatorConfigs){
+				if(g.enabledWorlds.contains(world)){
+					gc = g;
+				}
+			}
+			//TODO THIS will cause Nullpointers..
+			//cacheOreGen(p.getUniqueId(), id, world);
 		} else {
-
+			//get the level
 			int islandLevel = getLevel(p.getUniqueId(), world);
-			if (p.isOnline()) {
-				Player realP = p.getPlayer();
 
-				if (this.getActiveWorlds().contains(realP.getWorld())) {
+			//if (p.isOnline()) {
+				Player realP = p.getPlayer();
+					int count = 0;
 					for (GeneratorConfig gc2 : generatorConfigs) {
 						if (gc2 == null) {
 							continue;
 						}
-						if ((realP.hasPermission(gc2.permission) || gc2.permission.length() == 0)
+						count++;
+
+
+						if ((p.isOnline() && (realP.hasPermission(gc2.permission)) || gc2.permission.length() == 0)
 								&& islandLevel >= gc2.unlock_islandLevel) {
 							// continue
-							gc = gc2;
-							id++;
+							if ((gc2.enabledWorlds.contains(world) || gc2.enabledWorlds.isEmpty()) &&
+									this.getActiveWorlds().contains(Bukkit.getWorld(world))) {
+								gc = gc2;
+							}
+
+							//this is only needed for checking the owners permissions
+							//TODO use perms of members
+							for(String w: gc2.enabledWorlds){
+								worldId.put(w,count);
+							}
+
+						}else{
+							GeneratorConfig tmp = getCachedGeneratorConfig(p.getUniqueId(), world);
+							if(tmp != null){
+								gc = tmp;
+							}
 						}
 
 					}
-				}
-			} else {
-				gc = getCachedGeneratorConfig(p.getUniqueId());
-			}
 		}
-		if (id > 0) {
-			cacheOreGen(p.getUniqueId(), id - 1);
+
+		for (Map.Entry<String, Integer> pair : worldId.entrySet()) {
+			cacheOreGen(p.getUniqueId(), pair.getKey(), pair.getValue()-1);
 		}
+
+		//if (id > 0) {
+		//	cacheOreGen(p.getUniqueId(), world, id - 1);
+		//}
 		return gc;
 	}
 
@@ -214,18 +292,50 @@ public class CustomOreGen extends JavaPlugin {
 		this.disabledWorlds = disabledWorlds;
 	}
 
-	public GeneratorConfig getCachedGeneratorConfig(UUID uuid) {
-		if (cachedOregenConfigs.containsKey(uuid)) {
-			return generatorConfigs.get(cachedOregenConfigs.get(uuid));
+	public GeneratorConfig getCachedGeneratorConfig(UUID uuid, String world) {
+		UUIDWorld worlduuid = new UUIDWorld(uuid, world);
+		if (cachedOregenConfigs.containsKey(worlduuid)) {
+			int id = cachedOregenConfigs.get(worlduuid);
+			//System.out.println("GET: "+id + " WORLD: " + world);
+			return generatorConfigs.get(id);
 		}
 		return null;
 	}
 
-	public void cacheOreGen(UUID uuid, int configID) {
-		cachedOregenConfigs.put(uuid, configID);
+	public void cacheOreGen(UUID uuid, String world, int configID) {
+		//System.out.println("SET: " + configID + " " + world );
+		cachedOregenConfigs.put(new UUIDWorld(uuid,world), configID);
 	}
 
 	public void sendConsole(String msg) {
 		clogger.sendMessage(PREFIX + msg.replace("&", "§"));
+	}
+
+	private class UUIDWorld{
+
+		UUIDWorld(UUID uuid, String world){
+			this.uuid = uuid;
+			this.world = world;
+		}
+		UUID uuid;
+		String world;
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+
+			UUIDWorld uuidWorld = (UUIDWorld) o;
+
+			if (uuid != null ? !uuid.equals(uuidWorld.uuid) : uuidWorld.uuid != null) return false;
+			return world != null ? world.equals(uuidWorld.world) : uuidWorld.world == null;
+		}
+
+		@Override
+		public int hashCode() {
+			int result = uuid != null ? uuid.hashCode() : 0;
+			result = 31 * result + (world != null ? world.hashCode() : 0);
+			return result;
+		}
 	}
 }
